@@ -15,6 +15,5 @@ public class SwitchBrowserActivity extends AppCompatActivity {
         String url = getIntent().getStringExtra(Intent.EXTRA_TEXT);
         Uri uri = Uri.parse(url);
         BrowserController.showBottomSheet(this, uri);
-//        finish();
     }
 }

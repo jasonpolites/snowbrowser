@@ -30,17 +30,26 @@ public class BrowserController {
     public static final Intent getBrowserIntent(Context context, Uri uri) {
 
         SharedPreferences sharedPref = context.getSharedPreferences("snow", Context.MODE_PRIVATE);
-        boolean reset = sharedPref.getBoolean("reset", false);
+        String redirectBrowser =  sharedPref.getString("redirect", "Chrome");
+
+        Log.e("Snow", "Redirect browser is " + redirectBrowser);
+
+//        boolean reset = sharedPref.getBoolean("reset", false);
 
         final String host = getHostFromUri(uri);
 
         Intent targetIntent = intents.get(host);
 
-        if(targetIntent == null || reset) {
+//        if(targetIntent == null || reset) {
+
+//            if(reset) {
+//                Log.e("Snow", "reset was true");
+//                sharedPref.edit().putBoolean("reset", false).commit();
+//            }
 
             Log.e("Snow", "No target set for " + host);
 
-            String targetBrowserName = sharedPref.getString(host, "Brave"); // TODO: Should be app default not hard coded
+            String targetBrowserName = sharedPref.getString(host, redirectBrowser);
 
             Log.e("Snow", "Got target browser: " + targetBrowserName);
 
@@ -51,9 +60,7 @@ public class BrowserController {
             ResolveInfo target = null;
             for (ResolveInfo b : allBrowsers) {
                 String appName = b.loadLabel(pm).toString();
-
                 Log.e("snow", appName);
-
                 if(appName.equalsIgnoreCase(targetBrowserName)) {
                     target = b;
                     break;
@@ -63,21 +70,23 @@ public class BrowserController {
             if(target != null) {
                 Log.e("Snow", "Launching Browser..." + targetBrowserName);
                 ActivityInfo activity = target.activityInfo;
-                ComponentName name = new ComponentName(activity.applicationInfo.packageName, activity.name);
-                targetIntent = new Intent(Intent.ACTION_MAIN);
 
-                targetIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-                targetIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                targetIntent.setComponent(name);
+                targetIntent = intents.get(activity.applicationInfo.packageName);
 
-                intents.put(host, targetIntent);
-
+                if(targetIntent == null) {
+                    ComponentName name = new ComponentName(activity.applicationInfo.packageName, activity.name);
+                    targetIntent = new Intent(Intent.ACTION_MAIN);
+                    targetIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                    targetIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                    targetIntent.setComponent(name);
+                }
+                intents.put(activity.applicationInfo.packageName, targetIntent);
             } else {
                 Log.e("Snow", "No Target!");
             }
-        } else {
-            Log.e("Snow", "Already have intent :)");
-        }
+//        } else {
+//            Log.e("Snow", "Already have intent :)");
+//        }
 
         return targetIntent;
     }
@@ -94,18 +103,20 @@ public class BrowserController {
         return null;
     }
 
-    public static final void showBottomSheet(AppCompatActivity parent, Uri uri) {
+    public static final List<ResolveInfo> getAllBrowsers(AppCompatActivity parent) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(Uri.parse("https://www.google.com")); // Just any url to get browsers
         PackageManager pm = parent.getApplicationContext().getPackageManager();
-        List<ResolveInfo> allBrowsers = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
+        return pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
+    }
 
+    public static final void showBottomSheet(AppCompatActivity parent, Uri uri) {
+        PackageManager pm = parent.getApplicationContext().getPackageManager();
+        List<ResolveInfo> allBrowsers = getAllBrowsers(parent);
         List<BrowserItem> browsers = new LinkedList<>();
-
         String me = parent.getString(R.string.browser_name);
         for (ResolveInfo b : allBrowsers) {
             String name = b.loadLabel(pm).toString();
-
             if(!name.equals(me)) {
                 BrowserItem bItem = new BrowserItem();
                 bItem.setName(b.loadLabel(pm).toString());
@@ -113,8 +124,6 @@ public class BrowserController {
                 browsers.add(bItem);
             }
         }
-
-
         final BottomSheetDialog bottomSheet = new BottomSheetDialog();
         bottomSheet.setBrowsers(browsers);
         bottomSheet.setUri(uri);

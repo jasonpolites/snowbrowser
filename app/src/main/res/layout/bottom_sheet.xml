@@ -14,5 +14,5 @@
         android:layout_gravity="left"
         android:textSize="16sp"
         android:layout_margin="8dp"
-        android:text="Open sites on this domain in the future with..."/>
+        android:text="Always open pages on this domain with..."/>
 </LinearLayout>

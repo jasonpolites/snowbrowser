@@ -46,6 +46,8 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
 
         if(this.browsers != null && this.browsers.size() > 0) {
 
+            final String host = BrowserController.getHostFromUri(uri);
+
             for (final BrowserItem browser: browsers) {
                 final View itemView = inflater.inflate(R.layout.bottom_sheet_item, container, false);
                 TextView textView = itemView.findViewById(R.id.browser_item_text);
@@ -61,25 +63,22 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
                 }
 
                 v.addView(itemView);
+
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        SharedPreferences sharedPref = getContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        editor.putBoolean("reset", true);
+                    SharedPreferences sharedPref = getContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPref.edit();
 
-                        final String host = BrowserController.getHostFromUri(uri);
+                    Log.e("Snow", "Setting browser for " + host + " to " + browser.getName());
 
-                        Log.e("Snow", "Setting browser for " + host + " to " + browser.getName());
+                    editor.putString(host, browser.getName());
+                    editor.commit();
 
-                        editor.putString(host, browser.getName());
-                        editor.commit();
-
-                        Intent intent = new Intent(getContext(), BrowserActivity.class);
-                        intent.setData(uri);
-                        startActivity(intent);
-
-                        dismiss();
+                    Intent intent = new Intent(getContext(), BrowserActivity.class);
+                    intent.setData(uri);
+                    startActivity(intent);
+                    dismiss();
                     }
                 });
             }
