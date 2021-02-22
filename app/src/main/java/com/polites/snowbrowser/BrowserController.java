@@ -82,18 +82,30 @@ public class BrowserController {
         return targetIntent;
     }
 
+    public static final ResolveInfo getDefaultBrowser(AppCompatActivity parent) {
+        PackageManager pm = parent.getApplicationContext().getPackageManager();
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("https://www.google.com")); // Just any url to get browsers
+        List<ResolveInfo> defaultBrowser = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+
+        if(defaultBrowser != null && defaultBrowser.size() > 0) {
+            return defaultBrowser.get(0);
+        }
+        return null;
+    }
+
     public static final void showBottomSheet(AppCompatActivity parent, Uri uri) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(Uri.parse("https://www.google.com")); // Just any url to get browsers
         PackageManager pm = parent.getApplicationContext().getPackageManager();
         List<ResolveInfo> allBrowsers = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
-        List<ResolveInfo> defaultBrowser = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
 
         List<BrowserItem> browsers = new LinkedList<>();
 
         String me = parent.getString(R.string.browser_name);
         for (ResolveInfo b : allBrowsers) {
             String name = b.loadLabel(pm).toString();
+
             if(!name.equals(me)) {
                 BrowserItem bItem = new BrowserItem();
                 bItem.setName(b.loadLabel(pm).toString());
@@ -101,6 +113,7 @@ public class BrowserController {
                 browsers.add(bItem);
             }
         }
+
 
         final BottomSheetDialog bottomSheet = new BottomSheetDialog();
         bottomSheet.setBrowsers(browsers);
