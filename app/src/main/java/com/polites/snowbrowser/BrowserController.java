@@ -32,61 +32,56 @@ public class BrowserController {
         SharedPreferences sharedPref = context.getSharedPreferences("snow", Context.MODE_PRIVATE);
         String redirectBrowser =  sharedPref.getString("redirect", "Chrome");
 
-        Log.e("Snow", "Redirect browser is " + redirectBrowser);
+        // TODO: Remove
+        if(SnowLog.isDebugEnabled()) {
+            if(uri.toString().contains("amp")) {
+                SnowLog.log(context, "Got amp url: " + uri);
+            }
+        }
 
-//        boolean reset = sharedPref.getBoolean("reset", false);
+        SnowLog.log(context, "Redirect browser is " + redirectBrowser);
 
         final String host = getHostFromUri(uri);
 
         Intent targetIntent = intents.get(host);
 
-//        if(targetIntent == null || reset) {
+        SnowLog.log(context, "No target set for " + host);
 
-//            if(reset) {
-//                Log.e("Snow", "reset was true");
-//                sharedPref.edit().putBoolean("reset", false).commit();
-//            }
+        String targetBrowserName = sharedPref.getString(host, redirectBrowser);
 
-            Log.e("Snow", "No target set for " + host);
+        SnowLog.log(context,"Got target browser: " + targetBrowserName);
 
-            String targetBrowserName = sharedPref.getString(host, redirectBrowser);
-
-            Log.e("Snow", "Got target browser: " + targetBrowserName);
-
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(uri);
-            PackageManager pm = context.getPackageManager();
-            List<ResolveInfo> allBrowsers = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
-            ResolveInfo target = null;
-            for (ResolveInfo b : allBrowsers) {
-                String appName = b.loadLabel(pm).toString();
-                Log.e("snow", appName);
-                if(appName.equalsIgnoreCase(targetBrowserName)) {
-                    target = b;
-                    break;
-                }
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(uri);
+        PackageManager pm = context.getPackageManager();
+        List<ResolveInfo> allBrowsers = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
+        ResolveInfo target = null;
+        for (ResolveInfo b : allBrowsers) {
+            String appName = b.loadLabel(pm).toString();
+            Log.e("snow", appName);
+            if(appName.equalsIgnoreCase(targetBrowserName)) {
+                target = b;
+                break;
             }
+        }
 
-            if(target != null) {
-                Log.e("Snow", "Launching Browser..." + targetBrowserName);
-                ActivityInfo activity = target.activityInfo;
+        if(target != null) {
+            SnowLog.log(context,"Launching Browser..." + targetBrowserName);
+            ActivityInfo activity = target.activityInfo;
 
-                targetIntent = intents.get(activity.applicationInfo.packageName);
+            targetIntent = intents.get(activity.applicationInfo.packageName);
 
-                if(targetIntent == null) {
-                    ComponentName name = new ComponentName(activity.applicationInfo.packageName, activity.name);
-                    targetIntent = new Intent(Intent.ACTION_MAIN);
-                    targetIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-                    targetIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                    targetIntent.setComponent(name);
-                }
-                intents.put(activity.applicationInfo.packageName, targetIntent);
-            } else {
-                Log.e("Snow", "No Target!");
+            if(targetIntent == null) {
+                ComponentName name = new ComponentName(activity.applicationInfo.packageName, activity.name);
+                targetIntent = new Intent(Intent.ACTION_MAIN);
+                targetIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                targetIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                targetIntent.setComponent(name);
             }
-//        } else {
-//            Log.e("Snow", "Already have intent :)");
-//        }
+            intents.put(activity.applicationInfo.packageName, targetIntent);
+        } else {
+            SnowLog.log(context,"No Target!");
+        }
 
         return targetIntent;
     }

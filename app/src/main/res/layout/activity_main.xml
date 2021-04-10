@@ -61,21 +61,67 @@
             </RadioGroup>
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_weight="1"
             android:layout_gravity="center_horizontal">
+
             <Button
                 android:id="@+id/resetAll"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
                 android:layout_gravity="center_horizontal"
-                android:text="Clear saved preferences" />
+                android:text="Clear saved data" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox
+                    android:id="@+id/logToggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Debug Logs"
+                    android:layout_weight="1"
+                    android:layout_gravity="center_vertical"/>
+                <Button
+                    android:id="@+id/printPrefs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="List Settings"/>
+            </LinearLayout>
+
+
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/SCROLLER_ID"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="vertical"
+                android:layout_weight="1"
+                android:fillViewport="true">
+
+                <TextView
+                    android:id="@+id/logView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ems="10"
+                    android:gravity="start|top"
+                    android:inputType="textMultiLine|textNoSuggestions"
+                    android:layout_weight="1"
+                    android:text=""
+                    android:fontFamily="monospace"
+                    android:textSize="9sp"
+                    android:textColor="#ffffff"
+                    android:background="@color/cardview_dark_background"
+                    android:padding="8sp"/>
+
+            </androidx.core.widget.NestedScrollView>
+
+
         </LinearLayout>
-
-
-    </LinearLayout>
+        </LinearLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

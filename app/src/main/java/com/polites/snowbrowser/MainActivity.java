@@ -2,7 +2,6 @@ package com.polites.snowbrowser;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,13 +12,13 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.util.List;
-
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,22 +26,23 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        setBrowserDefaultState();
+        updateState();
         final SwipeRefreshLayout pullToRefresh = findViewById(R.id.pullToRefresh);
+        final SharedPreferences sharedPref = getSharedPreferences("snow", Context.MODE_PRIVATE);
+        final RadioGroup radioButtonGroup = findViewById(R.id.chooseDefaultBrowserGroup);
+
         pullToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-            setBrowserDefaultState();
+            updateState();
             pullToRefresh.setRefreshing(false);
             }
         });
 
-        final RadioGroup radioButtonGroup = findViewById(R.id.chooseDefaultBrowserGroup);
         PackageManager pm = getApplicationContext().getPackageManager();
         List<ResolveInfo> allBrowsers = BrowserController.getAllBrowsers(this);
-
         ResolveInfo defaultBrowser = BrowserController.getDefaultBrowser(this);
-        final SharedPreferences sharedPref = getSharedPreferences("snow", Context.MODE_PRIVATE);
+
         String redirectBrowser =  sharedPref.getString("redirect", null);
 
         if(redirectBrowser == null) {
@@ -55,15 +55,61 @@ public class MainActivity extends AppCompatActivity {
         Button resetButton = findViewById(R.id.resetAll);
         resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                SharedPreferences.Editor editor = sharedPref.edit();
-                editor.clear();
-                RadioButton rb = (RadioButton) radioButtonGroup.getChildAt(0);
-                editor.putString("redirect", rb.getText().toString());
-                rb.setChecked(true);
-                editor.commit();
+            public void onClick(final View v) {
+
+            AsyncUtils.doAsync(new Runnable() {
+                @Override
+                public void run() {
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.clear();
+                        RadioButton rb = (RadioButton) radioButtonGroup.getChildAt(0);
+                        editor.putString("redirect", rb.getText().toString());
+                        rb.setChecked(true);
+                        editor.commit();
+                    }
+                });
+
                 Toast.makeText(v.getContext(), "Preferences cleared", Toast.LENGTH_SHORT).show();
-             }
+            }
+        });
+
+        final CheckBox logToggle = findViewById(R.id.logToggle);
+        logToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                TextView logView = findViewById(R.id.logView);
+                Button btnPrintPrefs = findViewById(R.id.printPrefs);
+                if(logToggle.isChecked()) {
+                    logView.setVisibility(View.VISIBLE);
+                    btnPrintPrefs.setVisibility(View.VISIBLE);
+                } else {
+                    logView.setVisibility(View.INVISIBLE);
+                    btnPrintPrefs.setVisibility(View.INVISIBLE);
+                }
+
+                AsyncUtils.doAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        sharedPref.edit().putBoolean("debug", logToggle.isChecked()).commit();
+                        SnowLog.setDebugEnabled(logToggle.isChecked());
+                    }
+                });
+            }
+        });
+
+        final Button btnPrintPrefs = findViewById(R.id.printPrefs);
+
+        btnPrintPrefs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SnowLog.log(MainActivity.this, "############### SAVED SETTINGS ##############");
+                Map<String, ?> allPrefs = sharedPref.getAll();
+                for(String key: allPrefs.keySet()) {
+                    SnowLog.log(MainActivity.this, key + ":" + allPrefs.get(key).toString());
+                }
+                SnowLog.log(MainActivity.this, "#############################################");
+                updateState();
+            }
         });
 
         String me = getString(R.string.browser_name);
@@ -97,9 +143,14 @@ public class MainActivity extends AppCompatActivity {
                 radioButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        editor.putString("redirect", name);
-                        editor.commit();
+                    AsyncUtils.doAsync(new Runnable() {
+                        @Override
+                        public void run() {
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            editor.putString("redirect", name);
+                            editor.commit();
+                        }
+                    });
                     }
                 });
 
@@ -108,7 +159,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setBrowserDefaultState() {
+    private void updateState() {
+        final SharedPreferences sharedPref = getSharedPreferences("snow", Context.MODE_PRIVATE);
         ResolveInfo defaultBrowser = BrowserController.getDefaultBrowser(this);
         Button setDefault = findViewById(R.id.setDefaultBrowserButton);
         TextView textView = findViewById(R.id.browserDefaultText);
@@ -134,11 +186,43 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+
+        boolean debug = sharedPref.getBoolean("debug", false);
+
+        TextView logView = findViewById(R.id.logView);
+        CheckBox logToggle = findViewById(R.id.logToggle);
+        Button btnPrintPrefs = findViewById(R.id.printPrefs);
+        logToggle.setChecked(debug);
+
+        if(debug) {
+            logView.setVisibility(View.VISIBLE);
+            btnPrintPrefs.setVisibility(View.VISIBLE);
+        } else {
+            logView.setVisibility(View.INVISIBLE);
+            btnPrintPrefs.setVisibility(View.INVISIBLE);
+        }
+
+        List<String> logs = SnowLog.getAllLogs();
+        logView.setText("");
+        if(logs.size() > 0) {
+            StringBuffer buffer = new StringBuffer(logs.size());
+            for (String log: logs) {
+                buffer.append(log);
+                buffer.append(System.getProperty("line.separator"));
+            }
+            logView.setText(buffer.toString());
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateState();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        setBrowserDefaultState();
+        updateState();
     }
 }

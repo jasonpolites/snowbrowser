@@ -67,14 +67,15 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                    SharedPreferences sharedPref = getContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPref.edit();
-
-                    Log.e("Snow", "Setting browser for " + host + " to " + browser.getName());
-
-                    editor.putString(host, browser.getName());
-                    editor.commit();
-
+                    AsyncUtils.doAsync(new Runnable() {
+                        @Override
+                        public void run() {
+                            SharedPreferences sharedPref = getContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            editor.putString(host, browser.getName());
+                            editor.commit();
+                        }
+                    });
                     Intent intent = new Intent(getContext(), BrowserActivity.class);
                     intent.setData(uri);
                     startActivity(intent);
