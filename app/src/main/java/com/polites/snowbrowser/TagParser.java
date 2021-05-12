@@ -15,13 +15,14 @@ public class TagParser {
         boolean found = false;
         while(!found) {
             int current = reader.read();
+            char currentChr = (char) current;
             if(current == -1) {
                 found = true;
             }
-            if (current == '>') {
+            if (currentChr == '>') {
                 found = true;
             } else {
-                buffer.append(current);
+                buffer.append(currentChr);
             }
         }
 
@@ -37,10 +38,11 @@ public class TagParser {
         boolean found = false;
         while(!found) {
             int current =  reader.read();
+            char currentChr = (char) current;
             if(current == -1) {
                 found = true;
             }
-            if(current == '<') {
+            if(currentChr == '<') {
                 String tagMatched = getTag(reader);
                 if(tagMatched.startsWith("link")) {
                     // get "rel"

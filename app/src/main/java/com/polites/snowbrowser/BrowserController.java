@@ -56,6 +56,8 @@ public class BrowserController {
                     if(linkValue != null &&  Patterns.WEB_URL.matcher(linkValue).matches()) {
                         SnowLog.log(context, "Replacing AMP url with canonical link value: " + linkValue);
                         uri = Uri.parse(linkValue);
+                    } else {
+                        SnowLog.log(context, "No canonical url found or is not a valid url: " + linkValue);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
