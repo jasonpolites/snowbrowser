@@ -1,0 +1,63 @@
+package com.polites.snowbrowser;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class TagParser {
+
+
+    private static String getTag(Reader reader) throws IOException {
+        StringBuilder buffer = new StringBuilder();
+        boolean found = false;
+        while(!found) {
+            int current = reader.read();
+            if(current == -1) {
+                found = true;
+            }
+            if (current == '>') {
+                found = true;
+            } else {
+                buffer.append(current);
+            }
+        }
+
+        return buffer.toString().toLowerCase();
+    }
+
+    /**
+     * VERY specialized HTML parser that JUST looks for <link rel="canonical"...
+      */
+    public static String getCanonicalLink(InputStream in) throws IOException {
+        // TODO: this will be slow if we don't check for HEAD tags
+        InputStreamReader reader = new InputStreamReader(in);
+        boolean found = false;
+        while(!found) {
+            int current =  reader.read();
+            if(current == -1) {
+                found = true;
+            }
+            if(current == '<') {
+                String tagMatched = getTag(reader);
+                if(tagMatched.startsWith("link")) {
+                    // get "rel"
+                    if(tagMatched.contains("canonical")) {
+                        final String regex = "(?<=\\bhref=\")[^\"]*";
+                        Pattern p = Pattern.compile(regex);
+                        Matcher m = p.matcher(tagMatched);
+                        if (m.find()) {
+                            return m.group(0);
+                        }
+                    }
+                } else if (tagMatched.startsWith("/head")) {
+                    // We didn't find it.. abort
+                    found = true;
+                }
+            }
+        }
+        return null;
+    }
+}

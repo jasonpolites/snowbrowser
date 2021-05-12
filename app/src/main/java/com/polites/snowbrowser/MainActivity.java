@@ -49,26 +49,19 @@ public class MainActivity extends AppCompatActivity {
             redirectBrowser = defaultBrowser.loadLabel(pm).toString();
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("redirect", redirectBrowser);
-            editor.commit();
+            editor.apply();
         }
 
         Button resetButton = findViewById(R.id.resetAll);
         resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
-
-            AsyncUtils.doAsync(new Runnable() {
-                @Override
-                public void run() {
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        editor.clear();
-                        RadioButton rb = (RadioButton) radioButtonGroup.getChildAt(0);
-                        editor.putString("redirect", rb.getText().toString());
-                        rb.setChecked(true);
-                        editor.commit();
-                    }
-                });
-
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.clear();
+                RadioButton rb = (RadioButton) radioButtonGroup.getChildAt(0);
+                editor.putString("redirect", rb.getText().toString());
+                rb.setChecked(true);
+                editor.apply();
                 Toast.makeText(v.getContext(), "Preferences cleared", Toast.LENGTH_SHORT).show();
             }
         });
@@ -87,13 +80,16 @@ public class MainActivity extends AppCompatActivity {
                     btnPrintPrefs.setVisibility(View.INVISIBLE);
                 }
 
-                AsyncUtils.doAsync(new Runnable() {
-                    @Override
-                    public void run() {
-                        sharedPref.edit().putBoolean("debug", logToggle.isChecked()).commit();
-                        SnowLog.setDebugEnabled(logToggle.isChecked());
-                    }
-                });
+                sharedPref.edit().putBoolean("debug", logToggle.isChecked()).apply();
+                SnowLog.setDebugEnabled(logToggle.isChecked());
+            }
+        });
+
+        final CheckBox unampToggle = findViewById(R.id.unampToggle);
+        unampToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sharedPref.edit().putBoolean("unamp", unampToggle.isChecked()).apply();
             }
         });
 
@@ -126,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
                 radioButton.setText(name);
                 radioButton.setPadding(padding, padding, padding, padding);
                 radioButton.setId(id++);
-                Drawable res = null;
+                Drawable res;
                 try {
                     res = pm.getApplicationIcon(browser.activityInfo.packageName);
                     res.setBounds(0, 0, imgSize, imgSize);
@@ -143,14 +139,9 @@ public class MainActivity extends AppCompatActivity {
                 radioButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                    AsyncUtils.doAsync(new Runnable() {
-                        @Override
-                        public void run() {
-                            SharedPreferences.Editor editor = sharedPref.edit();
-                            editor.putString("redirect", name);
-                            editor.commit();
-                        }
-                    });
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.putString("redirect", name);
+                        editor.apply();
                     }
                 });
 
@@ -188,11 +179,15 @@ public class MainActivity extends AppCompatActivity {
         }
 
         boolean debug = sharedPref.getBoolean("debug", false);
+        boolean unamp = sharedPref.getBoolean("unamp", false);
 
         TextView logView = findViewById(R.id.logView);
         CheckBox logToggle = findViewById(R.id.logToggle);
+        CheckBox unampToggle = findViewById(R.id.unampToggle);
         Button btnPrintPrefs = findViewById(R.id.printPrefs);
+
         logToggle.setChecked(debug);
+        unampToggle.setChecked(unamp);
 
         if(debug) {
             logView.setVisibility(View.VISIBLE);
@@ -205,7 +200,7 @@ public class MainActivity extends AppCompatActivity {
         List<String> logs = SnowLog.getAllLogs();
         logView.setText("");
         if(logs.size() > 0) {
-            StringBuffer buffer = new StringBuffer(logs.size());
+            StringBuilder buffer = new StringBuilder(logs.size());
             for (String log: logs) {
                 buffer.append(log);
                 buffer.append(System.getProperty("line.separator"));

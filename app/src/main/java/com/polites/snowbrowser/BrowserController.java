@@ -9,9 +9,16 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.util.Log;
+import android.util.Patterns;
 
 import com.google.common.net.InternetDomainName;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,18 +31,39 @@ public class BrowserController {
     static Map<String, Intent> intents = new HashMap<>();
 
     public static String getHostFromUri(Uri uri) {
-        return InternetDomainName.from(uri.getHost()).topDomainUnderRegistrySuffix().toString();
+        String host = uri.getHost();
+        if(host != null) {
+            return InternetDomainName.from(host).topDomainUnderRegistrySuffix().toString();
+        }
+        return null;
     }
 
-    public static final Intent getBrowserIntent(Context context, Uri uri) {
+    public static Intent getBrowserIntent(Context context, Uri uri) {
 
         SharedPreferences sharedPref = context.getSharedPreferences("snow", Context.MODE_PRIVATE);
         String redirectBrowser =  sharedPref.getString("redirect", "Chrome");
-
-        // TODO: Remove
-        if(SnowLog.isDebugEnabled()) {
+        boolean unamp = sharedPref.getBoolean("unamp", false);
+        if(unamp) {
             if(uri.toString().contains("amp")) {
                 SnowLog.log(context, "Got amp url: " + uri);
+                // Attempt to read the LINK element from the given URL to get the non-AMP target
+                HttpURLConnection conn = null;
+                try {
+                    conn = (HttpURLConnection) new URL(uri.toString()).openConnection();
+                    conn.setInstanceFollowRedirects(true);
+                    InputStream in = conn.getInputStream();
+                    String linkValue = TagParser.getCanonicalLink(in);
+                    if(linkValue != null &&  Patterns.WEB_URL.matcher(linkValue).matches()) {
+                        SnowLog.log(context, "Replacing AMP url with canonical link value: " + linkValue);
+                        uri = Uri.parse(linkValue);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if(conn != null) {
+                        conn.disconnect();
+                    }
+                }
             }
         }
 
@@ -50,6 +78,8 @@ public class BrowserController {
         String targetBrowserName = sharedPref.getString(host, redirectBrowser);
 
         SnowLog.log(context,"Got target browser: " + targetBrowserName);
+
+        SnowLog.log(context,"Opening link: " + uri.toString());
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(uri);
@@ -78,6 +108,9 @@ public class BrowserController {
                 targetIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 targetIntent.setComponent(name);
             }
+
+            targetIntent.setData(uri);
+
             intents.put(activity.applicationInfo.packageName, targetIntent);
         } else {
             SnowLog.log(context,"No Target!");
@@ -86,7 +119,7 @@ public class BrowserController {
         return targetIntent;
     }
 
-    public static final ResolveInfo getDefaultBrowser(AppCompatActivity parent) {
+    public static ResolveInfo getDefaultBrowser(AppCompatActivity parent) {
         PackageManager pm = parent.getApplicationContext().getPackageManager();
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(Uri.parse("https://www.google.com")); // Just any url to get browsers
@@ -98,14 +131,14 @@ public class BrowserController {
         return null;
     }
 
-    public static final List<ResolveInfo> getAllBrowsers(AppCompatActivity parent) {
+    public static List<ResolveInfo> getAllBrowsers(AppCompatActivity parent) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(Uri.parse("https://www.google.com")); // Just any url to get browsers
         PackageManager pm = parent.getApplicationContext().getPackageManager();
         return pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
     }
 
-    public static final void showBottomSheet(AppCompatActivity parent, Uri uri) {
+    public static void showBottomSheet(AppCompatActivity parent, Uri uri) {
         PackageManager pm = parent.getApplicationContext().getPackageManager();
         List<ResolveInfo> allBrowsers = getAllBrowsers(parent);
         List<BrowserItem> browsers = new LinkedList<>();

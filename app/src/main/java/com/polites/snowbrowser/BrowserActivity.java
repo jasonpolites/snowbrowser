@@ -30,7 +30,7 @@ public class BrowserActivity extends Activity {
         if(getIntent().getData() != null) {
             Intent targetIntent = BrowserController.getBrowserIntent(this, getIntent().getData());
             if(targetIntent != null) {
-                targetIntent.setData(getIntent().getData());
+//                targetIntent.setData(getIntent().getData());
                 startActivity(targetIntent);
             }
         }
