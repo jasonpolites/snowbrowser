@@ -16,15 +16,14 @@ public class SnowLog {
     static final LinkedList<String> entries = new LinkedList<>();
     static int maxEntries = 100;
     static boolean initialized = false;
-    public static final void log(Context context, String entry) {
-
+    public static void log(Context context, String entry) {
         if(!initialized) {
             SharedPreferences sharedPref = context.getSharedPreferences("snow", Context.MODE_PRIVATE);
             debugEnabled = sharedPref.getBoolean("debug", false);
             initialized = true;
         }
 
-        if(debugEnabled == true) {
+        if(debugEnabled) {
             Log.e("Snow", entry);
             entries.addLast(DATE_FORMAT.format(System.currentTimeMillis()) + ": " + entry);
             if(entries.size() > maxEntries) {
@@ -33,11 +32,11 @@ public class SnowLog {
         }
     }
 
-    public static final List<String> getAllLogs() {
+    public static List<String> getAllLogs() {
         return Collections.unmodifiableList(entries);
     }
 
-    public static final void clear() {
+    public static void clear() {
         entries.clear();
     }
 

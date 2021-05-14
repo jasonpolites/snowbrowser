@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 
 public class TagParser {
 
-
     private static String getTag(Reader reader) throws IOException {
         StringBuilder buffer = new StringBuilder();
         boolean found = false;

@@ -54,7 +54,7 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
                 textView.setText(browser.getName());
                 ImageView imageView = itemView.findViewById(R.id.browser_item_icon);
 
-                Drawable res = null;
+                Drawable res;
                 try {
                     res = getContext().getPackageManager().getApplicationIcon(browser.getActivityInfo().packageName);
                     imageView.setImageDrawable(res);
@@ -64,23 +64,16 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
 
                 v.addView(itemView);
 
-                itemView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                    AsyncUtils.doAsync(new Runnable() {
-                        @Override
-                        public void run() {
-                            SharedPreferences sharedPref = getContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = sharedPref.edit();
-                            editor.putString(host, browser.getName());
-                            editor.commit();
-                        }
-                    });
+                itemView.setOnClickListener(v1 -> {
+                    SharedPreferences sharedPref = getContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString(host, browser.getName());
+                    editor.apply();
+
                     Intent intent = new Intent(getContext(), BrowserActivity.class);
                     intent.setData(uri);
                     startActivity(intent);
                     dismiss();
-                    }
                 });
             }
         }

@@ -24,16 +24,21 @@ import java.util.Map;
  */
 public class BrowserActivity extends Activity {
 
+    static {
+        StrictMode.enableDefaults();
+    }
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        StrictMode.enableDefaults();
         if(getIntent().getData() != null) {
+            SnowLog.log(this, "############### BROWSER ACTION ##############");
             Intent targetIntent = BrowserController.getBrowserIntent(this, getIntent().getData());
             if(targetIntent != null) {
-//                targetIntent.setData(getIntent().getData());
                 startActivity(targetIntent);
             }
         }
+
+        // TODO: Not really sure how to make this activity truly "invisible"
         finish();
     }
 }
