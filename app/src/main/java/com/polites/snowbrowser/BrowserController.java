@@ -37,20 +37,20 @@ public class BrowserController {
         return null;
     }
 
-    public static Uri append(String to, Uri from){
-        Uri toUri = Uri.parse(to);
-        Uri.Builder builder = toUri.buildUpon();
-        Set<String> queryParameterNames = from.getQueryParameterNames();
-        for (String key : queryParameterNames) {
-            List<String> queryParameters = from.getQueryParameters(key);
-            for (String val : queryParameters) {
-                if(toUri.getQueryParameter(key) == null) {
-                    builder.appendQueryParameter(key, val);
-                }
-            }
-        }
-        return builder.build();
-    }
+//    public static Uri append(String to, Uri from){
+//        Uri toUri = Uri.parse(to);
+//        Uri.Builder builder = toUri.buildUpon();
+//        Set<String> queryParameterNames = from.getQueryParameterNames();
+//        for (String key : queryParameterNames) {
+//            List<String> queryParameters = from.getQueryParameters(key);
+//            for (String val : queryParameters) {
+//                if(toUri.getQueryParameter(key) == null) {
+//                    builder.appendQueryParameter(key, val);
+//                }
+//            }
+//        }
+//        return builder.build();
+//    }
 
     /**
      * "Unfolds" the uri by either following redirects, and/or bypassing AMP pages
@@ -73,10 +73,11 @@ public class BrowserController {
                 conn.setInstanceFollowRedirects(!followRedirects);
 
                 int responseCode = conn.getResponseCode();
-                if(responseCode == 301 || responseCode == 302) {
+                if(responseCode == 301 || responseCode == 302 || responseCode == 307) {
                     String location = conn.getHeaderField("Location");
-                    // Copy params from src
-                    Uri locationUrl = append(location, uri);
+
+//                    Uri locationUrl = append(location, uri);
+                    Uri locationUrl = Uri.parse(location);
 
                     if(!locationUrl.toString().equalsIgnoreCase(uri.toString())) {
                         SnowLog.log(context, String.format("Link has redirect to: %s", locationUrl.toString()));
