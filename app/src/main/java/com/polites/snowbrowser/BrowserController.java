@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -35,22 +36,55 @@ public class BrowserController {
         return null;
     }
 
-    public static Intent getBrowserIntent(Context context, Uri uri) {
-        // Loading shared prefs does a FS STAT operation, which causes a StrictMode violation
-        // OK sure, but come on.. I'm not going to do a whole lot of async work just to avoid a 10ms STAT
+    public static Uri append(String to, Uri from){
+        Uri toUri = Uri.parse(to);
+        Uri.Builder builder = toUri.buildUpon();
+        Set<String> queryParameterNames = from.getQueryParameterNames();
+        for (String key : queryParameterNames) {
+            List<String> queryParameters = from.getQueryParameters(key);
+            for (String val : queryParameters) {
+                if(toUri.getQueryParameter(key) == null) {
+                    builder.appendQueryParameter(key, val);
+                }
+            }
+        }
+        return builder.build();
+    }
+
+    /**
+     * "Unfolds" the uri by either following redirects, and/or bypassing AMP pages
+     * @param context
+     * @param uri
+     * @return
+     */
+    public static Uri unfold(Context context, Uri uri) {
         SharedPreferences sharedPref = context.getSharedPreferences("snow", Context.MODE_PRIVATE);
-        String redirectBrowser =  sharedPref.getString("redirect", "Chrome");
         boolean unamp = sharedPref.getBoolean("unamp", false);
-        if(unamp) {
-            if(uri.toString().toLowerCase().contains("amp")) { // iffy condition, but works for 99% of cases
+        boolean followRedirects = sharedPref.getBoolean("followRedirects", false);
 
-                SnowLog.log(context, "Got AMP url: " + uri);
+        if(unamp || followRedirects) {
 
-                // Attempt to read the LINK element from the given URL to get the non-AMP target
-                HttpURLConnection conn = null;
-                try {
-                    conn = (HttpURLConnection) new URL(uri.toString()).openConnection();
-                    conn.setInstanceFollowRedirects(true);
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URL(uri.toString()).openConnection();
+
+                // If we are manually following redirects, we don't want the conn to do it for us
+                conn.setInstanceFollowRedirects(!followRedirects);
+
+                int responseCode = conn.getResponseCode();
+                if(responseCode == 301 || responseCode == 302) {
+                    String location = conn.getHeaderField("Location");
+                    // Copy params from src
+                    Uri locationUrl = append(location, uri);
+
+                    if(!locationUrl.toString().equalsIgnoreCase(uri.toString())) {
+                        SnowLog.log(context, String.format("Link has redirect to: %s", locationUrl.toString()));
+                        // recurse
+                        return unfold(context, locationUrl);
+                    }
+                } else if(unamp && uri.toString().toLowerCase().contains("amp")) { // iffy condition, but works for 99% of cases
+                    SnowLog.log(context, "Got AMP url: " + uri);
+                    // Attempt to read the LINK element from the given URL to get the non-AMP target
 
                     // We don't ever want to exceed 1 second
                     // Technically this allows for 2 seconds, but the API doesn't really cater
@@ -63,22 +97,35 @@ public class BrowserController {
                     // to just have nothing happen.
                     InputStream in = conn.getInputStream();
                     String linkValue = TagParser.getCanonicalLink(in);
-                    if(linkValue != null && Patterns.WEB_URL.matcher(linkValue).matches()) {
+                    if (linkValue != null && Patterns.WEB_URL.matcher(linkValue).matches()) {
                         SnowLog.log(context, "Replacing AMP url with canonical link value: " + linkValue);
                         uri = Uri.parse(linkValue);
                     } else {
                         SnowLog.log(context, "No canonical url found or is not a valid url: " + linkValue);
                     }
-                } catch (IOException e) {
-                    // Don't need this exception.. probably don't even need the trace TBH
-                    e.printStackTrace();
-                } finally {
-                    if(conn != null) {
-                        conn.disconnect();
-                    }
+                }
+            } catch (IOException e) {
+                // Don't need this exception.. probably don't even need the trace TBH
+                e.printStackTrace();
+            } finally {
+                if(conn != null) {
+                    conn.disconnect();
                 }
             }
         }
+
+        return uri;
+    }
+
+    public static Intent getBrowserIntent(Context context, Uri uri) {
+        // Loading shared prefs does a FS STAT operation, which causes a StrictMode violation
+        // OK sure, but come on.. I'm not going to do a whole lot of async work just to avoid a 10ms STAT
+        SharedPreferences sharedPref = context.getSharedPreferences("snow", Context.MODE_PRIVATE);
+        String redirectBrowser =  sharedPref.getString("redirect", "Chrome");
+//        boolean unamp = sharedPref.getBoolean("unamp", false);
+//        boolean followRedirects = sharedPref.getBoolean("followRedirects", false);
+
+        uri = unfold(context, uri);
 
         final String host = getHostFromUri(uri);
         Intent targetIntent = intents.get(host);
@@ -91,9 +138,9 @@ public class BrowserController {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(uri);
         PackageManager pm = context.getPackageManager();
-        List<ResolveInfo> allBrowsers = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
+        List<ResolveInfo> allTargets = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL);
         ResolveInfo target = null;
-        for (ResolveInfo b : allBrowsers) {
+        for (ResolveInfo b : allTargets) {
             String appName = b.loadLabel(pm).toString();
             if(appName.equalsIgnoreCase(targetBrowserName)) {
                 target = b;
@@ -101,8 +148,27 @@ public class BrowserController {
             }
         }
 
+        if(target == null) {
+            // There was no defined target that matches the one we wanted.
+            // This likely means that either the target browser was uninstalled, or that the
+            // Choose the first intent that is NOT this browser app
+            if(allTargets != null && allTargets.size() > 0) {
+                targetBrowserName = context.getApplicationInfo().loadLabel(pm).toString();
+                for (ResolveInfo b : allTargets) {
+                    String appName = b.loadLabel(pm).toString();
+                    if(!appName.equalsIgnoreCase(targetBrowserName)) {
+                        target = b;
+                        targetBrowserName = appName;
+                        break;
+                    }
+                }
+            } else {
+                SnowLog.log(context, String.format("No Target intents for uri: %s (this should not happen!)", uri.toString()));
+            }
+         }
+
         if(target != null) {
-            SnowLog.log(context,"Launching Browser: " + targetBrowserName);
+            SnowLog.log(context,"Launching Target: " + targetBrowserName);
             ActivityInfo activity = target.activityInfo;
             targetIntent = intents.get(activity.applicationInfo.packageName);
             if(targetIntent == null) {
@@ -115,7 +181,7 @@ public class BrowserController {
             targetIntent.setData(uri);
             intents.put(activity.applicationInfo.packageName, targetIntent);
         } else {
-            SnowLog.log(context,"No Target!");
+            SnowLog.log(context, String.format("No Target found for uri: %s", uri.toString()));
         }
 
         return targetIntent;

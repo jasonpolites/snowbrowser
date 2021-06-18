@@ -83,10 +83,24 @@
                     android:id="@+id/unampToggle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Bypass AMP Pages"
+                    android:text="Bypass AMP Pages (More accurate, but may be slower)"
                     android:layout_weight="1"
                     android:layout_gravity="center_vertical"/>
              </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox
+                    android:id="@+id/redirectToggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Follow Redirects (More accurate, but may be slower)"
+                    android:layout_weight="1"
+                    android:layout_gravity="center_vertical"/>
+            </LinearLayout>
+
 
             <LinearLayout
                 android:layout_width="match_parent"

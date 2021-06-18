@@ -31,12 +31,9 @@ public class MainActivity extends AppCompatActivity {
         final SharedPreferences sharedPref = getSharedPreferences("snow", Context.MODE_PRIVATE);
         final RadioGroup radioButtonGroup = findViewById(R.id.chooseDefaultBrowserGroup);
 
-        pullToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
+        pullToRefresh.setOnRefreshListener(() -> {
             updateState();
             pullToRefresh.setRefreshing(false);
-            }
         });
 
         PackageManager pm = getApplicationContext().getPackageManager();
@@ -53,59 +50,48 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Button resetButton = findViewById(R.id.resetAll);
-        resetButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View v) {
-                SharedPreferences.Editor editor = sharedPref.edit();
-                editor.clear();
-                RadioButton rb = (RadioButton) radioButtonGroup.getChildAt(0);
-                editor.putString("redirect", rb.getText().toString());
-                rb.setChecked(true);
-                editor.apply();
-                Toast.makeText(v.getContext(), "Preferences cleared", Toast.LENGTH_SHORT).show();
-            }
+        resetButton.setOnClickListener(v -> {
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.clear();
+            RadioButton rb = (RadioButton) radioButtonGroup.getChildAt(0);
+            editor.putString("redirect", rb.getText().toString());
+            rb.setChecked(true);
+            editor.apply();
+            Toast.makeText(v.getContext(), "Preferences cleared", Toast.LENGTH_SHORT).show();
         });
 
         final CheckBox logToggle = findViewById(R.id.logToggle);
-        logToggle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TextView logView = findViewById(R.id.logView);
-                Button btnPrintPrefs = findViewById(R.id.printPrefs);
-                if(logToggle.isChecked()) {
-                    logView.setVisibility(View.VISIBLE);
-                    btnPrintPrefs.setVisibility(View.VISIBLE);
-                } else {
-                    logView.setVisibility(View.INVISIBLE);
-                    btnPrintPrefs.setVisibility(View.INVISIBLE);
-                }
-
-                sharedPref.edit().putBoolean("debug", logToggle.isChecked()).apply();
-                SnowLog.setDebugEnabled(logToggle.isChecked());
+        logToggle.setOnClickListener(v -> {
+            TextView logView = findViewById(R.id.logView);
+            Button btnPrintPrefs = findViewById(R.id.printPrefs);
+            if(logToggle.isChecked()) {
+                logView.setVisibility(View.VISIBLE);
+                btnPrintPrefs.setVisibility(View.VISIBLE);
+            } else {
+                logView.setVisibility(View.INVISIBLE);
+                btnPrintPrefs.setVisibility(View.INVISIBLE);
             }
+
+            sharedPref.edit().putBoolean("debug", logToggle.isChecked()).apply();
+            SnowLog.setDebugEnabled(logToggle.isChecked());
         });
 
         final CheckBox unampToggle = findViewById(R.id.unampToggle);
-        unampToggle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sharedPref.edit().putBoolean("unamp", unampToggle.isChecked()).apply();
-            }
-        });
+        unampToggle.setOnClickListener(v -> sharedPref.edit().putBoolean("unamp", unampToggle.isChecked()).apply());
+
+        final CheckBox redirectToggle = findViewById(R.id.redirectToggle);
+        redirectToggle.setOnClickListener(v -> sharedPref.edit().putBoolean("followRedirects", redirectToggle.isChecked()).apply());
 
         final Button btnPrintPrefs = findViewById(R.id.printPrefs);
 
-        btnPrintPrefs.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SnowLog.log(MainActivity.this, "############### SAVED SETTINGS ##############");
-                Map<String, ?> allPrefs = sharedPref.getAll();
-                for(String key: allPrefs.keySet()) {
-                    SnowLog.log(MainActivity.this, key + ":" + allPrefs.get(key).toString());
-                }
-                SnowLog.log(MainActivity.this, "#############################################");
-                updateState();
+        btnPrintPrefs.setOnClickListener(v -> {
+            SnowLog.log(MainActivity.this, "############### SAVED SETTINGS ##############");
+            Map<String, ?> allPrefs = sharedPref.getAll();
+            for(String key: allPrefs.keySet()) {
+                SnowLog.log(MainActivity.this, key + ":" + allPrefs.get(key).toString());
             }
+            SnowLog.log(MainActivity.this, "#############################################");
+            updateState();
         });
 
         String me = getString(R.string.browser_name);
@@ -136,13 +122,10 @@ public class MainActivity extends AppCompatActivity {
                     radioButton.setChecked(true);
                 }
 
-                radioButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        editor.putString("redirect", name);
-                        editor.apply();
-                    }
+                radioButton.setOnClickListener(v -> {
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString("redirect", name);
+                    editor.apply();
                 });
 
                 radioButtonGroup.addView(radioButton);
@@ -180,14 +163,17 @@ public class MainActivity extends AppCompatActivity {
 
         boolean debug = sharedPref.getBoolean("debug", false);
         boolean unamp = sharedPref.getBoolean("unamp", false);
+        boolean followRedirects = sharedPref.getBoolean("followRedirects", false);
 
         TextView logView = findViewById(R.id.logView);
         CheckBox logToggle = findViewById(R.id.logToggle);
         CheckBox unampToggle = findViewById(R.id.unampToggle);
+        CheckBox redirectToggle = findViewById(R.id.redirectToggle);
         Button btnPrintPrefs = findViewById(R.id.printPrefs);
 
         logToggle.setChecked(debug);
         unampToggle.setChecked(unamp);
+        redirectToggle.setChecked(followRedirects);
 
         if(debug) {
             logView.setVisibility(View.VISIBLE);

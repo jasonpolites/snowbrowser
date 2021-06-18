@@ -25,7 +25,7 @@ public class TagParser {
             }
         }
 
-        return buffer.toString().toLowerCase();
+        return buffer.toString();
     }
 
     /**
@@ -43,9 +43,10 @@ public class TagParser {
             }
             if(currentChr == '<') {
                 String tagMatched = getTag(reader);
-                if(tagMatched.startsWith("link")) {
+                String ciTagMatched = tagMatched.toLowerCase();
+                if(ciTagMatched.startsWith("link")) {
                     // get "rel"
-                    if(tagMatched.contains("canonical")) {
+                    if(ciTagMatched.contains("canonical")) {
                         final String regex = "(?<=\\bhref=\")[^\"]*";
                         Pattern p = Pattern.compile(regex);
                         Matcher m = p.matcher(tagMatched);
