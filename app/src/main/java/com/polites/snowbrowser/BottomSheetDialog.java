@@ -4,28 +4,21 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-
-import android.os.StrictMode;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.util.List;
+import java.util.Objects;
+
+import androidx.annotation.Nullable;
 
 public class BottomSheetDialog extends BottomSheetDialogFragment {
 
@@ -56,7 +49,7 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
 
                 Drawable res;
                 try {
-                    res = getContext().getPackageManager().getApplicationIcon(browser.getActivityInfo().packageName);
+                    res = requireContext().getPackageManager().getApplicationIcon(browser.getActivityInfo().packageName);
                     imageView.setImageDrawable(res);
                 } catch (PackageManager.NameNotFoundException e) {
                     e.printStackTrace();
@@ -65,7 +58,7 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
                 v.addView(itemView);
 
                 itemView.setOnClickListener(v1 -> {
-                    SharedPreferences sharedPref = getContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
+                    SharedPreferences sharedPref = requireContext().getSharedPreferences("snow", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPref.edit();
                     editor.putString(host, browser.getName());
                     editor.apply();

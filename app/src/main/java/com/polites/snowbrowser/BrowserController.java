@@ -8,9 +8,10 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.util.Log;
 import android.util.Patterns;
+
 import com.google.common.net.InternetDomainName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -122,8 +123,6 @@ public class BrowserController {
         // OK sure, but come on.. I'm not going to do a whole lot of async work just to avoid a 10ms STAT
         SharedPreferences sharedPref = context.getSharedPreferences("snow", Context.MODE_PRIVATE);
         String redirectBrowser =  sharedPref.getString("redirect", "Chrome");
-//        boolean unamp = sharedPref.getBoolean("unamp", false);
-//        boolean followRedirects = sharedPref.getBoolean("followRedirects", false);
 
         uri = unfold(context, uri);
 

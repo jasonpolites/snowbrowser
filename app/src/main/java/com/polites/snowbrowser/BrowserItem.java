@@ -1,7 +1,6 @@
 package com.polites.snowbrowser;
 
 import android.content.pm.ActivityInfo;
-import android.graphics.drawable.Drawable;
 
 public class BrowserItem {
 

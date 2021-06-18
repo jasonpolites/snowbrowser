@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         String redirectBrowser =  sharedPref.getString("redirect", null);
 
         if(redirectBrowser == null) {
+            assert defaultBrowser != null;
             redirectBrowser = defaultBrowser.loadLabel(pm).toString();
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("redirect", redirectBrowser);
@@ -88,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
             SnowLog.log(MainActivity.this, "############### SAVED SETTINGS ##############");
             Map<String, ?> allPrefs = sharedPref.getAll();
             for(String key: allPrefs.keySet()) {
-                SnowLog.log(MainActivity.this, key + ":" + allPrefs.get(key).toString());
+                SnowLog.log(MainActivity.this, key + ":" + Objects.requireNonNull(allPrefs.get(key)).toString());
             }
             SnowLog.log(MainActivity.this, "#############################################");
             updateState();
@@ -143,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
             if(defaultBrowser.activityInfo.name.equals(BrowserActivity.class.getName())) {
                 setDefault.setVisibility(View.INVISIBLE);
                 setDefault.setEnabled(false);
-                textView.setText("Snow Browser is currently active!");
+                textView.setText(R.string.browser_active);
                 isDefault = true;
             }
         }
@@ -151,13 +153,10 @@ public class MainActivity extends AppCompatActivity {
         if(!isDefault) {
             setDefault.setVisibility(View.VISIBLE);
             setDefault.setEnabled(true);
-            textView.setText("Snow Browser not is currently active. Set it to the system default browser to activate");
-            setDefault.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    final Intent intent = new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS);
-                    startActivityForResult(intent, 0);
-                }
+            textView.setText(R.string.browser_inactive);
+            setDefault.setOnClickListener(v -> {
+                final Intent intent = new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS);
+                startActivityForResult(intent, 0);
             });
         }
 

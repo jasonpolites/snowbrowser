@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">Snow</string>
     <string name="browser_name">Snow Browser</string>
+    <string name="browser_active">Snow Browser is currently active!</string>
+    <string name="browser_inactive">Snow Browser not is currently active. Set it to the system default browser to activate</string>
 </resources>
