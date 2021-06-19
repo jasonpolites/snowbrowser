@@ -30,7 +30,7 @@
                     android:padding="8sp"
                     android:textSize="16sp"
                     android:layout_gravity="top"
-                    android:text="Snow Browser not is currently active" />
+                    android:text="@string/browser_inactive" />
 
                 <Button
                     android:id="@+id/setDefaultBrowserButton"
@@ -67,13 +67,29 @@
             android:layout_weight="1"
             android:layout_gravity="center_horizontal">
 
-            <Button
-                android:id="@+id/resetAll"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:layout_gravity="center_horizontal"
-                android:text="Clear saved data" />
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/resetAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:text="Clear saved prefs" />
+
+                <Button
+                    android:id="@+id/saveLogs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:text="Save Debug Logs" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
